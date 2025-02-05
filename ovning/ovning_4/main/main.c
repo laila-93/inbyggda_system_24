@@ -26,7 +26,8 @@ void app_main(void)
     gpio_config(&button_config);
 
    
-    esp_err_t ret = esp_task_wdt_init(WDT_TIMEOUT );
+
+    esp_err_t ret = esp_task_wdt_init(WDT_TIMEOUT);
     if (ret == ESP_OK) {
         esp_task_wdt_add(NULL);
     } else {
