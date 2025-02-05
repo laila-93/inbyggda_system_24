@@ -1,91 +1,71 @@
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <driver/gpio.h>
+#include <esp_task_wdt.h>
+#include <esp_err.h>
+#include <nvs_flash.h>
+#include <esp_system.h>
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
-#include "esp_task_wdt.h"
-#include "driver/gpio.h"
-#include "esp_log.h"
 
+// Definiera knappens GPIO pin
+const gpio_num_t button_pin = GPIO_NUM_12;
 
-#define BUTTON_GPIO 12
-#define WDT_TIMEOUT 3 //Timeout i sekunder
-
-void app_main(void)
+// Funktion för att hantera knappen
+void buttonTask(void *pvParameter)
 {
-   
-    esp_task_wdt_delete(NULL);
-
-   
-    gpio_config_t button_config = {
-        .pin_bit_mask = (1ULL << BUTTON_GPIO),
-        .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_NEGEDGE
-    };
-    gpio_config(&button_config);
-
-   
-
-    esp_err_t ret = esp_task_wdt_init(WDT_TIMEOUT);
-    if (ret == ESP_OK) {
-        esp_task_wdt_add(NULL);
-    } else {
-        ESP_LOGE("Watchdog", "Failed to initialize watchdog: %s", esp_err_to_name(ret));
-        return;
-    }
-
-   
-    esp_reset_reason_t reason = esp_reset_reason();
-    ESP_LOGI("Boot", "Reset/Boot Reason was: %d", reason);
-
-    switch (reason) {
-        case ESP_RST_UNKNOWN:
-            ESP_LOGI("Boot", "Reset reason cannot be determined");
-            break;
-        case ESP_RST_POWERON:
-            ESP_LOGI("Boot", "Reset due to power-on event");
-            break;
-        case ESP_RST_EXT:
-            ESP_LOGI("Boot", "Reset by external pin (not applicable for ESP32)");
-            break;
-        case ESP_RST_SW:
-            ESP_LOGI("Boot", "Software reset via esp_restart");
-            break;
-        case ESP_RST_PANIC:
-            ESP_LOGI("Boot", "Software reset due to exception/panic");
-            break;
-        case ESP_RST_INT_WDT:
-            ESP_LOGI("Boot", "Reset (software or hardware) due to interrupt watchdog");
-            break;
-        case ESP_RST_TASK_WDT:
-            ESP_LOGI("Boot", "Reset due to task watchdog");
-            break;
-        case ESP_RST_WDT:
-            ESP_LOGI("Boot", "Reset due to other watchdogs");
-            break;                                
-        case ESP_RST_DEEPSLEEP:
-            ESP_LOGI("Boot", "Reset after exiting deep sleep mode");
-            break;
-        case ESP_RST_BROWNOUT:
-            ESP_LOGI("Boot", "Brownout reset (software or hardware)");
-            break;
-        case ESP_RST_SDIO:
-            ESP_LOGI("Boot", "Reset over SDIO");
-            break;
-        default:
-            break;
-    }
-
-    while (true) {
-       
-        if (gpio_get_level(BUTTON_GPIO) == 0) {
-           
-            esp_task_wdt_reset();
-            ESP_LOGI("Watchdog", "Watchdog kicked!");
+    // Initiera knappens GPIO pin som ingång
+    gpio_set_direction(button_pin, GPIO_MODE_INPUT);
+    while (1)
+    {
+        // Läser knappens tillstånd
+        int buttonState = gpio_get_level(button_pin);
+        if (buttonState == 0)
+        {
+            printf("Knapp tryckt\n");
         }
-       
-       
-        vTaskDelay(pdMS_TO_TICKS(100));
+        else
+        {
+            printf("Knapp inte tryckt\n");
+        }
+        // Paus för att undvika överbelastning
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
+}
+// Funktion för att hantera watchdog-timer
+void watchdogTask(void *pvParameter)
+{
+    esp_task_wdt_config_t wdtConfig = {
+        .timeout_ms = 3000
+    };
+    // Initiera Watchdog Timer med timeout på 3 sekunder
+    ESP_ERROR_CHECK(esp_task_wdt_init(&wdtConfig));
+
+    // Lägg till aktuell task till Watchdog Timer
+    esp_task_wdt_add(NULL);
+
+    while (1)
+    {
+        // Mata Watchdog
+        esp_task_wdt_reset();
+        printf("Watchdog matas\n");
+        vTaskDelay(2000 / portTICK_PERIOD_MS); // Matas var 2:a sekund
+    }
+}
+void app_main()
+{
+    // Initiera NVS (Non-Volatile Storage)
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+    esp_task_wdt_config_t WDtime;
+    // Initiera Watchdog Timer
+    ESP_ERROR_CHECK(esp_task_wdt_init(&WDtime));
+
+    // Skapa och starta uppgifter
+    xTaskCreate(&buttonTask, "buttonTask", 2048, NULL, 5, NULL);
+    xTaskCreate(&watchdogTask, "watchdogTask", 2048, NULL, 5, NULL);
 }
