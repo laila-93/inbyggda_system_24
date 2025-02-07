@@ -40,7 +40,7 @@ static void tx_task(void *arg)
     static const char *TX_TASK_TAG = "TX_TASK";
     esp_log_level_set(TX_TASK_TAG, ESP_LOG_INFO);
     while (1) {
-        sendData(TX_TASK_TAG, "Hello world");
+        sendData(TX_TASK_TAG, "Hello");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 }
@@ -57,6 +57,7 @@ static void rx_task(void *arg)
             ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, data);
             ESP_LOG_BUFFER_HEXDUMP(RX_TASK_TAG, data, rxBytes, ESP_LOG_INFO);
         }
+       printf("%d", rxBytes);
     }
     free(data);
 }
