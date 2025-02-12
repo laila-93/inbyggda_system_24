@@ -1,7 +1,7 @@
 
 #include "button.h"
 
-#define BUTTON_PIN GPIO_NUM_4
+#define BUTTON_PIN GPIO_NUM_12
 
 void init();
 void update();

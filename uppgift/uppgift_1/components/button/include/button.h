@@ -3,7 +3,7 @@
 #include "driver/ledc.h"
 #include "freertos/FreeRTOS.h"
 
-void app_main(void)
+void init() 
 {
     gpio_config_t buttonConfig;
     buttonConfig.mode = GPIO_MODE_INPUT;
@@ -11,4 +11,12 @@ void app_main(void)
     buttonConfig.pull_down_en = 0;
     buttonConfig.pull_up_en = 0;
     buttonConfig.pin_bit_mask = 1ULL << GPIO_NUM_12;
-    esp_err_t error = gpio_config(&buttonConfig);
+    esp_err_t error = gpio_config(&buttonConfig); 
+
+
+}
+
+void update ()
+{
+    
+}
