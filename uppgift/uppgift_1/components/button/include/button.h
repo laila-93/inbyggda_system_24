@@ -1,22 +1,24 @@
+#ifndef BUTTON_H
+#define BUTTON_H
 
-#include "driver/gpio.h"
-#include "driver/ledc.h"
-#include "freertos/FreeRTOS.h"
-
-void init() 
-{
-    gpio_config_t buttonConfig;
-    buttonConfig.mode = GPIO_MODE_INPUT;
-    buttonConfig.intr_type = GPIO_INTR_DISABLE;
-    buttonConfig.pull_down_en = 0;
-    buttonConfig.pull_up_en = 0;
-    buttonConfig.pin_bit_mask = 1ULL << GPIO_NUM_12;
-    esp_err_t error = gpio_config(&buttonConfig); 
+#include <stdbool.h>
+#define BUTTON_PIN GPIO_NUM_2
+#define DEBOUNCE_TIME_MS 50
 
 
-}
+typedef struct {
+    int pin;
+    bool lastState;
+    bool isPressed;
+    void (*onPressed)(int pin);
 
-void update ()
-{
-    
-}
+} Button_t;
+
+void init(Button_t *btn, int pin);
+void button_update(Button_t *btn);
+bool button_isPressed(Button_t *btn);
+void button_setOnPressed(Button_t *btn, void (*onPressed)(int pin));
+void myButtonCallback(int pin);
+
+#endif
+
