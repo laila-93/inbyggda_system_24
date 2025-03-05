@@ -1,27 +1,29 @@
 #ifndef ANALOG_LED_H
 #define ANALOG_LED_H
 
-#include "driver/ledc.h" // Inkludera LEDC-drivrutinen för PWM
-#include "freertos/FreeRTOS.h" // Inkludera FreeRTOS
-#include "freertos/task.h" // Inkludera FreeRTOS-tasks
+#include "driver/gpio.h"
+#include "driver/ledc.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <stdlib.h>
+#include <math.h>
+#include <stdio.h>
 
 typedef struct {
-    ledc_channel_config_t ledc_channel; // LEDC-konfiguration för PWM-kanal
-    int period; // Period för sinusvåg
-    float angle; // Aktuell vinkel för sinusvåg
-    TickType_t last_update; // Tidpunkt för senaste uppdatering
-} AnalogLed;
+    int pin;
+    int timer_channel;
+    TickType_t last_update;
+    double period;
+    double duty_cycle;
+    double target_duty_cycle;
+    double amplitude;
+    double frequency;
+    bool led_on; // Ny flagga för LED-läget
+} AnalogLed_t;
 
-// Funktion för att initiera LED
-void AnalogLed_init(AnalogLed *led, int gpio_pin);
+void analog_led_init(int pin, AnalogLed_t *led);
+void update_analog(AnalogLed_t *led);
+void setAnalogLed(bool led_on, double duty_cycle, double frequency, AnalogLed_t *led); 
+void sin_wave(double period, AnalogLed_t *led);
 
-// Funktion för att uppdatera LED (används för sinusvåg)
-void AnalogLed_update(AnalogLed *led);
-
-// Funktion för att sätta LED-ljusstyrka
-void AnalogLed_setLed(AnalogLed *led, int value);
-
-// Funktion för att ställa in sinusvåg för LED
-void AnalogLed_setPeriod(AnalogLed *led, int period);
-
-#endif // ANALOG_LED_H
+#endif

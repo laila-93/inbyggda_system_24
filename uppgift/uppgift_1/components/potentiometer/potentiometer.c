@@ -1,41 +1,57 @@
+#include "hal/adc_types.h"
 #include "potentiometer.h"
+#include "esp_adc/adc_oneshot.h"
+#include "esp_log.h"
 
-// Funktion för att initiera potentiometern
-void Potentiometer_init(Potentiometer *pot, adc1_channel_t adc_channel) {
-    pot->adc_channel = adc_channel;
-    pot->threshold = 0;
-    pot->threshold_reached = false; // Initialisera flaggan till false
-    pot->onThreshold = NULL;
+static const char *TAG = "ADC_SENSOR";
 
-    // Konfigurera ADC-kanalen
-    adc1_config_width(ADC_WIDTH_BIT_12); // 12-bitars bredd
-    adc1_config_channel_atten(adc_channel, ADC_ATTEN_DB_0); // Ingen dämpning
+void adc_init(adc_sensor_t *sensor, int adc_pin) {
+    sensor->adc_pin = adc_pin;
+    sensor->threshold = 0;
+    sensor->on_threshold = NULL;
+    sensor->rising_edge = true;
+
+    adc_oneshot_unit_init_cfg_t adc_config = {
+        .unit_id = ADC_UNIT_1,
+        .clk_src = ADC_DIGI_CLK_SRC_DEFAULT
+    };
+    adc_oneshot_new_unit(&adc_config, &sensor->adc_handle);
+
+    adc_oneshot_chan_cfg_t channel_config = {
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+        .atten = ADC_ATTEN_DB_12
+    };
+    adc_oneshot_config_channel(sensor->adc_handle, sensor->adc_pin, &channel_config);
+
+    ESP_LOGI(TAG, "ADC initialized on pin %d", adc_pin);
 }
 
-// Funktion för att uppdatera potentiometerns värde
-void Potentiometer_update(Potentiometer *pot) {
-    int raw_value = adc1_get_raw(pot->adc_channel); // Läs råvärdet från ADC-kanalen
-    int scaled_value = raw_value % 4096; // Skala värdet till 0-4095 (12-bitars upplösning)
+void adc_update(adc_sensor_t *sensor) {
+    int value;
+    adc_oneshot_read(sensor->adc_handle, sensor->adc_pin, &value);
 
-    if (pot->onThreshold != NULL) {
-        if (!pot->threshold_reached && scaled_value >= pot->threshold) {
-            pot->onThreshold((int)pot->adc_channel, scaled_value);
-            pot->threshold_reached = true; // Sätt flaggan till true
-        } else if (pot->threshold_reached && scaled_value < pot->threshold) {
-            pot->threshold_reached = false; // Återställ flaggan till false när värdet går under tröskeln
+    ESP_LOGI(TAG, "ADC Value: %d", value);
+
+    if (sensor->on_threshold) {
+        if (sensor->rising_edge && value > sensor->threshold) {
+            sensor->on_threshold(sensor->adc_pin, value);
+        } else if (!sensor->rising_edge && value < sensor->threshold) {
+            sensor->on_threshold(sensor->adc_pin, value);
         }
     }
 }
 
-// Funktion för att hämta potentiometerns värde
-int Potentiometer_getValue(Potentiometer *pot) {
-    int raw_value = adc1_get_raw(pot->adc_channel); // Läs råvärdet från ADC-kanalen
-    return raw_value % 4096; // Skala värdet till 0-4095 (12-bitars upplösning)
+int adc_get_value(adc_sensor_t *sensor) {
+    int value;
+    adc_oneshot_read(sensor->adc_handle, sensor->adc_pin, &value);
+    return value;
 }
 
-// Funktion för att sätta tröskelvärde och callback-funktion
-void Potentiometer_setOnThreshold(Potentiometer *pot, int threshold, void (*onThreshold)(int adc, int value)) {
-    pot->threshold = threshold;
-    pot->onThreshold = onThreshold;
-    pot->threshold_reached = false; // Initialisera flaggan till false
+void adc_set_on_threshold(adc_sensor_t *sensor, int threshold, bool risingEdge, threshold_callback_t callback) {
+    sensor->threshold = threshold;
+    sensor->rising_edge = risingEdge;
+    sensor->on_threshold = callback;
+}
+void threshold_handler(int pin, int value) {
+    printf(" Threshold reached on ADC pin %d! Value: %d\n", pin, value);
 }

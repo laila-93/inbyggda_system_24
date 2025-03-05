@@ -1,28 +1,69 @@
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "analog_led.h" // Inkludera analog_led-headerfilen
+#include "potentiometer.h"
+#include "hal/adc_types.h"
+#include "esp_adc/adc_oneshot.h"
+ #include "freertos/FreeRTOS.h"
+ #include "freertos/task.h"
+ 
 
-void app_main(void)
-{
-    AnalogLed led;
-    AnalogLed_init(&led, 20); // Initiera LED på GPIO pin 20
 
-    // Sätt ljusstyrkan för LED:en till 21
-    
+ void app_main(){
+    AnalogLed_t led;
+    analog_led_init(20, &led); // Justerat till AnalogLed_init och GPIO pin 20
 
-    // Ställ in perioden för sinusvåg för LED:en
-    AnalogLed_setPeriod(&led, 1500);
-    AnalogLed_setLed(&led, 55);
-
-    while (1)
-    {
-        AnalogLed_update(&led); // Uppdatera LED för att hantera sinusvåg
-        vTaskDelay(pdMS_TO_TICKS(10)); // Vänta för att undvika att utlösa watchdog-timern
-
-    }
+    while (1) {
+        // För att blinka: setAnalogLed(true, 1.00, 1.0, &led);
+        // För att släcka: setAnalogLed(false, 0.0, 0.0, &led);
+        // För att lysa jämt: setAnalogLed(true, 1.00, 0.0, &led);
         
+        // Justeringar för att bestämma om LED:en ska lysa maximalt eller sluta lysa helt
+        setAnalogLed(true, 1.00, 1.0, &led); // För att blinka
+        // setAnalogLed(false, 0.0, 0.0, &led); // För att släcka
+        // setAnalogLed(true, 1.00, 0.0, &led); // För att lysa jämt
 
+        update_analog(&led);
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+ 
+
+ /*
+ #define ADC_PIN ADC_CHANNEL_3  // GPIO3
+ 
+ 
+ void app_main() {
+     adc_sensor_t sensor;
+     adc_init(&sensor, ADC_PIN);
+     adc_set_on_threshold(&sensor, 2000, true, threshold_handler);
+ 
+     while (1) {
+         adc_update(&sensor);
+         vTaskDelay(pdMS_TO_TICKS(500)); 
+     }
+ 
+ 
+ */
+ 
+        
+    /*
+     AnalogLed_t led;
+    analog_led_init(20, &led); // Justerat till AnalogLed_init och GPIO pin 20
+
+    while (1) {
+        // För att blinka: setAnalogLed(true, 1.00, 1.0, &led);
+        // För att släcka: setAnalogLed(false, 0.0, 0.0, &led);
+        // För att lysa jämt: setAnalogLed(true, 1.00, 0.0, &led);
+        
+        // Justeringar för att bestämma om LED:en ska lysa maximalt eller sluta lysa helt
+        setAnalogLed(true, 1.00, 1.0, &led); // För att blinka
+        // setAnalogLed(false, 0.0, 0.0, &led); // För att släcka
+        // setAnalogLed(true, 1.00, 0.0, &led); // För att lysa jämt
+
+        update_analog(&led);
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    */
+        
     /*
     LED_t led;
 
