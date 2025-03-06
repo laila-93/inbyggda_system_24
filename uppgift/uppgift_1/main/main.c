@@ -1,35 +1,32 @@
+#include "analog_led.h" 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <stdio.h>
+
+static const char *TAG = "analog_led_example";
+
+void app_main(void) {
+    AnalogLed_t led;
+    init(20, &led); // Initiera LED på pin 20
+
+    setLed(200, &led); // Sätt fast ljusstyrka till 200
+    set_sinus_wave(10000, &led); // Sätt sinusvåg med period 10 sekunder
+
+    while (1) {
+        update(&led);  // Uppdatera LED-ljusstyrkan
+        vTaskDelay(pdMS_TO_TICKS(10)); // Vänta 10 ms innan nästa uppdatering
+    }
+
+
+ /*
+ #include <stdio.h>
 #include "potentiometer.h"
 #include "hal/adc_types.h"
 #include "esp_adc/adc_oneshot.h"
  #include "freertos/FreeRTOS.h"
  #include "freertos/task.h"
  
-
-
- void app_main(){
-    AnalogLed_t led;
-    analog_led_init(20, &led); // Justerat till AnalogLed_init och GPIO pin 20
-
-    while (1) {
-        // För att blinka: setAnalogLed(true, 1.00, 1.0, &led);
-        // För att släcka: setAnalogLed(false, 0.0, 0.0, &led);
-        // För att lysa jämt: setAnalogLed(true, 1.00, 0.0, &led);
-        
-        // Justeringar för att bestämma om LED:en ska lysa maximalt eller sluta lysa helt
-        setAnalogLed(true, 1.00, 1.0, &led); // För att blinka
-        // setAnalogLed(false, 0.0, 0.0, &led); // För att släcka
-        // setAnalogLed(true, 1.00, 0.0, &led); // För att lysa jämt
-
-        update_analog(&led);
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-
- 
-
- /*
  #define ADC_PIN ADC_CHANNEL_3  // GPIO3
- 
  
  void app_main() {
      adc_sensor_t sensor;
@@ -40,8 +37,6 @@
          adc_update(&sensor);
          vTaskDelay(pdMS_TO_TICKS(500)); 
      }
- 
- 
  */
  
         
@@ -63,6 +58,7 @@
         vTaskDelay(pdMS_TO_TICKS(10));
     }
     */
+
         
     /*
     LED_t led;
@@ -82,7 +78,21 @@
     }
     */
 
+
     /*
+ #include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+#include "button.h" // Inkludera din knappheaderfil
+
+// Callback-funktion för knapptryckning
+void myButtonCallback() {
+    printf("Knappen trycktes ned!\n");
+}
+
+void app_main() {
+
     Button_t btn;
 
     init(&btn, 2);  // Initiera knappen på GPIO pin 2
