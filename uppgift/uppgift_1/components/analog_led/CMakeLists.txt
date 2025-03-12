@@ -1,5 +1,7 @@
 idf_component_register(SRCS "analog_led.c"
                     INCLUDE_DIRS "include"
                     
-                    REQUIRES driver)
+                    REQUIRES esp_timer driver
+                    
+                    )
                     

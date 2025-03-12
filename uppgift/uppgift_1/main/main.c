@@ -1,63 +1,41 @@
-#include "analog_led.h" 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include <stdio.h>
 
-static const char *TAG = "analog_led_example";
+#include "analog_led.h"
+
+AnalogLED_t my_led;
 
 void app_main(void) {
-    AnalogLed_t led;
-    init(20, &led); // Initiera LED på pin 20
 
-    setLed(200, &led); // Sätt fast ljusstyrka till 200
-    set_sinus_wave(10000, &led); // Sätt sinusvåg med period 10 sekunder
+    analog_led_init(&my_led, ANALOG_LED_PIN);
+    analog_set_led(&my_led, 500, 4000); //ljusstyrka (0-1023), ...sek period, vid 500, 0 lyser hela tiden, ingen sinVåg
+    analog_sin_wave(&my_led, 1); // Sinusvågen: slå på 1; stäng av 0
 
     while (1) {
-        update(&led);  // Uppdatera LED-ljusstyrkan
-        vTaskDelay(pdMS_TO_TICKS(10)); // Vänta 10 ms innan nästa uppdatering
+
+        analog_led_update(&my_led);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
+
 
 
  /*
  #include <stdio.h>
-#include "potentiometer.h"
-#include "hal/adc_types.h"
-#include "esp_adc/adc_oneshot.h"
- #include "freertos/FreeRTOS.h"
- #include "freertos/task.h"
- 
- #define ADC_PIN ADC_CHANNEL_3  // GPIO3
- 
- void app_main() {
-     adc_sensor_t sensor;
-     adc_init(&sensor, ADC_PIN);
-     adc_set_on_threshold(&sensor, 2000, true, threshold_handler);
- 
-     while (1) {
-         adc_update(&sensor);
-         vTaskDelay(pdMS_TO_TICKS(500)); 
-     }
- */
- 
-        
-    /*
-     AnalogLed_t led;
-    analog_led_init(20, &led); // Justerat till AnalogLed_init och GPIO pin 20
+#include "potentiometer.h"        
+#include "hal/adc_types.h"        
+#include "esp_adc/adc_oneshot.h"  
+#include "freertos/FreeRTOS.h"    
+#include "freertos/task.h"        
+#define ADC_PIN ADC_CHANNEL_4      
 
-    while (1) {
-        // För att blinka: setAnalogLed(true, 1.00, 1.0, &led);
-        // För att släcka: setAnalogLed(false, 0.0, 0.0, &led);
-        // För att lysa jämt: setAnalogLed(true, 1.00, 0.0, &led);
-        
-        // Justeringar för att bestämma om LED:en ska lysa maximalt eller sluta lysa helt
-        setAnalogLed(true, 1.00, 1.0, &led); // För att blinka
-        // setAnalogLed(false, 0.0, 0.0, &led); // För att släcka
-        // setAnalogLed(true, 1.00, 0.0, &led); // För att lysa jämt
+void app_main() {
+    adc_sensor_t sensor;  // Skapar en sensor (en "variabel" som lagrar information om ADC)
+    adc_init(&sensor, ADC_PIN);  // Anropar funktionen som sätter upp ADC-sensorn på den pinnen
+    adc_set_on_threshold(&sensor, 2000, 2, threshold_handler);  // Sätter tröskelvärdet till 2000 och anger en funktion (callback) som körs när tröskeln passeras
 
-        update_analog(&led);
-        vTaskDelay(pdMS_TO_TICKS(10));
+    while (1) {  // Startar en evig loop som aldrig slutar
+        adc_update(&sensor);  // Uppdaterar sensorvärdet (läser det nya ADC-värdet)
+        vTaskDelay(pdMS_TO_TICKS(500));  // Väntar 500 millisekunder innan nästa uppdatering
     }
-    */
+ */ 
 
         
     /*

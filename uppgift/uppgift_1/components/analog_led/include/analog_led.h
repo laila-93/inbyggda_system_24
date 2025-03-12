@@ -1,26 +1,34 @@
 #ifndef ANALOG_LED_H
 #define ANALOG_LED_H
 
-#include "driver/gpio.h"
 #include "driver/ledc.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <math.h>
 
-// Struktur som håller all information om LED:ns tillstånd
+#define ANALOG_LED_PIN 2
+
+#define LEDC_TIMER LEDC_TIMER_0
+#define LEDC_MODE LEDC_LOW_SPEED_MODE
+#define LEDC_CHANNEL LEDC_CHANNEL_0
+#define LEDC_DUTY_RES LEDC_TIMER_13_BIT
+#define LEDC_FREQUENCY 5000
+
 typedef struct {
-    int pin;               // Pin-nummer där LED:en är kopplad
-    int timer_channel;     // LED-timer kanal
-    TickType_t last_update; // Tidpunkt för senaste uppdatering
-    double period;         // Period för sinusvågen
-    double duty_cycle;     // LED:ns nuvarande ljusstyrka (0 till 1)
-    double target_duty_cycle; // Målvärde för fast ljusstyrka
-    bool sinus_active;     // Om sinusvågen är aktiv eller inte
-} AnalogLed_t;
 
-// Funktionsprototyper
-void init(int pin, AnalogLed_t *led);
-void update(AnalogLed_t *led);
-void setLed(double value, AnalogLed_t *led);
-void set_sinus_wave(double period, AnalogLed_t *led);
+    int pin;
+    int value;
+    int is_sin_wave;
+    int period;
+    uint64_t last_update;
+
+} AnalogLED_t;
+
+
+void analog_led_init(AnalogLED_t *led, int pin);
+void analog_led_update(AnalogLED_t *led);
+void analog_set_led(AnalogLED_t *led, int value, int period);
+void analog_sin_wave(AnalogLED_t *led, int enable);
 
 #endif
