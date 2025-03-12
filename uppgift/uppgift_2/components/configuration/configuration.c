@@ -1,43 +1,45 @@
+#include "config.h"
 #include <stdio.h>
-#include "configuration.h"
 #include <string.h>
-#include <stdio.h>
 
-// Simulerad NVS (icke-flyktigt minne)
-static DeviceConfig simulatedNVS = {
-    .deviceName = "DefaultDevice", // Standardvärde för enhetsnamn
-    .serialNumber = "DefaultSN"   // Standardvärde för serienummer
-};
+// Kontrollera att MAX_LEN är definierad
+#ifndef MAX_LEN
+#define MAX_LEN 50
+#endif
 
-ConfigResult config_init(DeviceConfig *config) {
-    // Initiera från simulerad NVS
-    *config = simulatedNVS; // Kopiera data från simulerad NVS till config
-    return CONFIG_OK; // Returnera OK om allt är korrekt
+
+// Arbetsminne för att lagra namn och serienummer
+char deviceName[MAX_LEN] = "";
+char serialNumber[MAX_LEN] = "";
+
+// Simulerat NVS-minne (icke-flyktigt minne)
+char nvs_deviceName[MAX_LEN] = "StandardDevice";
+char nvs_serialNumber[MAX_LEN] = "123456789";
+
+// Laddar data från NVS till arbetsminne
+void initConfig() {
+    strcpy(deviceName, nvs_deviceName); // Kopiera från NVS
+    strcpy(serialNumber, nvs_serialNumber); // Kopiera från NVS
 }
 
-char* getDeviceName(DeviceConfig *config) {
-    return config->deviceName; // Returnera enhetsnamn
+// Hämtar device name från arbetsminnet
+char* getDeviceName() {
+    return deviceName;
 }
 
-char* getSerialNumber(DeviceConfig *config) {
-    return config->serialNumber; // Returnera serienummer
+// Hämtar serial number från arbetsminnet
+char* getSerialNumber() {
+    return serialNumber;
 }
 
-ConfigResult setDeviceName(DeviceConfig *config, const char *deviceName) {
-    if (strlen(deviceName) >= sizeof(config->deviceName) - 1) {
-        return CONFIG_ERROR; // Fel om namnet är för långt
-    }
-    strcpy(config->deviceName, deviceName); // Kopiera namnet till strukturen
-    simulatedNVS = *config; // Spara till simulerad NVS
-    return CONFIG_OK; // Returnera OK om namnet är inställt
+// Uppdaterar device name i arbetsminnet och sparar i NVS
+void setDeviceName(char *newName) {
+    strncpy(deviceName, newName, MAX_LEN); // Uppdatera arbetsminnet
+    strcpy(nvs_deviceName, newName); // Spara i "NVS"
 }
 
-ConfigResult setSerialNumber(DeviceConfig *config, const char *serialNumber) {
-    if (strlen(serialNumber) >= sizeof(config->serialNumber) - 1) {
-        return CONFIG_ERROR; // Fel om serienumret är för långt
-    }
-    strcpy(config->serialNumber, serialNumber); // Kopiera serienumret till strukturen
-    simulatedNVS = *config; // Spara till simulerad NVS
-    return CONFIG_OK; // Returnera OK om serienumret är inställt
+// Uppdaterar serial number i arbetsminnet och sparar i NVS
+void setSerialNumber(char *newSerial) {
+    strncpy(serialNumber, newSerial, MAX_LEN); // Uppdatera arbetsminnet
+    strcpy(nvs_serialNumber, newSerial); // Spara i "NVS"
 }
-
