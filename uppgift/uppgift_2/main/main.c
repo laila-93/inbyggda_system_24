@@ -1,21 +1,22 @@
-#include "config.h"
 #include <stdio.h>
+#include "Configuration.h"
 
-int main() {
-    initConfig(); // Ladda värden från NVS
-    
-    // Visa aktuella värden
-    printf("Nuvarande Device Name: %s\n", getDeviceName());
-    printf("Nuvarande Serial Number: %s\n", getSerialNumber());
-    
+void app_main() {
+    Configuration config;
+
+    // Initiera konfigurationen (initialisering av NVS)
+    initConfiguration(&config);
+
+    // Visa initiala värden från NVS
+    printf("NVS initialized and values loaded into RAM.\n");
+    printf("Device Name: %s\n", getDeviceName(&config));
+    printf("Serial Number: %s\n", getSerialNumber(&config));
+
     // Uppdatera värden
-    setDeviceName("MinEnhet"); // Ändra device name
-    setSerialNumber("987654321"); // Ändra serial number
-    
+    setDeviceName(&config, "ESP32_DevKit");
+    setSerialNumber(&config, "1234567890");
+
     // Visa uppdaterade värden
-    printf("Efter uppdatering:\n");
-    printf("Device Name: %s\n", getDeviceName());
-    printf("Serial Number: %s\n", getSerialNumber());
-    
-    return 0;
+    printf("Updated Device Name: %s\n", getDeviceName(&config));
+    printf("Updated Serial Number: %s\n", getSerialNumber(&config));
 }

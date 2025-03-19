@@ -1,45 +1,49 @@
 
-#include "analog_led.h"
-
-AnalogLED_t my_led;
-
-void app_main(void) {
-
-    analog_led_init(&my_led, ANALOG_LED_PIN);
-    analog_set_led(&my_led, 500, 4000); //ljusstyrka (0-1023), ...sek period, vid 500, 0 lyser hela tiden, ingen sinVåg
-    analog_sin_wave(&my_led, 1); // Sinusvågen: slå på 1; stäng av 0
-
-    while (1) {
-
-        analog_led_update(&my_led);
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
-
-
-
- /*
- #include <stdio.h>
-#include "potentiometer.h"        
+#include <stdio.h>
+#include "potentiometer.h"        // Vi hämtar funktionerna för att läsa av potentiometern
 #include "hal/adc_types.h"        
-#include "esp_adc/adc_oneshot.h"  
+#include "esp_adc/adc_oneshot.h"  // Bibliotek för att läsa analogt värde
 #include "freertos/FreeRTOS.h"    
 #include "freertos/task.h"        
-#define ADC_PIN ADC_CHANNEL_4      
 
+#define ADC_PIN ADC_CHANNEL_4      // Vi säger att vi använder kanal 4 för att läsa värdet
+
+// Detta är huvuddelen av programmet
 void app_main() {
-    adc_sensor_t sensor;  // Skapar en sensor (en "variabel" som lagrar information om ADC)
-    adc_init(&sensor, ADC_PIN);  // Anropar funktionen som sätter upp ADC-sensorn på den pinnen
-    adc_set_on_threshold(&sensor, 2000, 2, threshold_handler);  // Sätter tröskelvärdet till 2000 och anger en funktion (callback) som körs när tröskeln passeras
+    adc_sensor_t sensor;  // Skapar en "låda" (variabel) där vi sparar infon om potentiometern
+    adc_init(&sensor, ADC_PIN);  // Startar och kopplar sensorn till rätt pin
+    adc_set_on_threshold(&sensor, 2000, 1, threshold_handler);  // Om värdet går över 2000 körs en funktion
 
-    while (1) {  // Startar en evig loop som aldrig slutar
-        adc_update(&sensor);  // Uppdaterar sensorvärdet (läser det nya ADC-värdet)
-        vTaskDelay(pdMS_TO_TICKS(500));  // Väntar 500 millisekunder innan nästa uppdatering
-    }
- */ 
+    while (1) {  // En loop som aldrig slutar, så att programmet körs hela tiden
+        adc_update(&sensor);  // Kollar vad värdet är just nu
+        vTaskDelay(pdMS_TO_TICKS(500));  // Väntar en halv sekund innan vi kollar igen
+    } 
 
-        
-    /*
-    LED_t led;
+/* #include <stdio.h>
+#include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_log.h"
+#include "hal/adc_types.h"
+#include "esp_mac.h"
+#include "analog_led.h" // Inkluderar headerfilen för analog LED-styrning
+
+void app_main(void)
+{
+    AnalogLED_t Myled; // Skapa en instans för att kontrollera LED-ljuset
+    AnalogLedInit(&Myled, ANALOG_LED_PIN); // Initiera LED med en specifik GPIO
+    Analog_set_Led(&Myled, 5000); // Sätt ljusstyrka (1000) och period (4000 ms = 4 sekunder)
+    AnalogSinWave(&Myled, 1, 4000); // Aktivera sinusvåg med LEDn och sätt period till 400 ms
+    Analog_set_Led(&Myled, 1000);
+
+    // Huvudloop för att uppdatera LED:n kontinuerligt
+    while (1) {
+        AnalogLedUpdate(&Myled); // Uppdatera LED:n baserat på sinusvåg eller fast ljusstyrka
+        vTaskDelay(50 / portTICK_PERIOD_MS); // Fördröjning på 50 ms mellan uppdateringarna
+    }*/
+ 
+    
+    /* LED_t led;
 
     led_init(&led, 20);
     //setLed(&led,0);
@@ -53,12 +57,10 @@ void app_main() {
        // button_update(&btn);
        update(&led);
        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-    */
+    } */
 
 
-    /*
- #include <stdio.h>
+    /* #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
@@ -80,7 +82,8 @@ void app_main() {
     {
         button_update(&btn);
         vTaskDelay(pdMS_TO_TICKS(10));
-    }
-    */
+    } */
+
     
-}
+    
+} 

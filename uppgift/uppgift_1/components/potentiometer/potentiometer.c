@@ -2,81 +2,76 @@
 #include "potentiometer.h"         
 #include "esp_adc/adc_oneshot.h"    
 #include "esp_log.h"               
-static const char *TAG = "ADC_SENSOR";  // Definierar en etikett för loggar (för felsökning)
 
-// Funktion som sätter upp ADC-sensorn
+static const char *TAG = "ADC_SENSOR";  // Namn för att logga meddelanden i terminalen
+
+// Funktion som sätter upp vår sensor
 void adc_init(adc_sensor_t *sensor, int adc_pin) {
-    sensor->adc_pin = adc_pin;  // Säger vilken pin (kanal) som ska användas
-    sensor->threshold = 2000;   // Sätter ett tröskelvärde på 2000
-    sensor->on_threshold = NULL; // Ingen funktion för tröskel hantering än
-    sensor->edge_type = EDGE_BOTH;  // Både stigande och fallande kant kan upptäckas
+    sensor->adc_pin = adc_pin;  // Vi sparar vilken pin vi använder
+    sensor->threshold = 2000;   // Vi säger att tröskeln är 2000
+    sensor->on_threshold = NULL; // Ingen funktion används än
+    sensor->edge_type = EDGE_BOTH;  // Vi vill upptäcka både när värdet går upp och ner
 
-    // Konfiguration för ADC-enheten
+    // Skapa en ADC-enhet
     adc_oneshot_unit_init_cfg_t adc_config = {
-        .unit_id = ADC_UNIT_1,      // Sätter ADC-enhetens ID till 1
-        .clk_src = ADC_DIGI_CLK_SRC_DEFAULT  // Sätter klockkällan till standard
+        .unit_id = ADC_UNIT_1,   // Vi använder ADC-enhet nummer 1
+        .clk_src = ADC_DIGI_CLK_SRC_DEFAULT  // Standardklocka för att läsa värdet
     };
-    adc_oneshot_new_unit(&adc_config, &sensor->adc_handle);  // Skapar en ny ADC-enhet
+    adc_oneshot_new_unit(&adc_config, &sensor->adc_handle);  // Startar ADC-enheten
 
-    // Konfiguration för ADC-kanalen (kanalens inställningar)
+    // Ställer in hur vi ska läsa värdet
     adc_oneshot_chan_cfg_t channel_config = {
-        .bitwidth = ADC_BITWIDTH_DEFAULT,  // Sätter standard bitdjup
-        .atten = ADC_ATTEN_DB_12  // Sätter förstärkning till 12 dB
+        .bitwidth = ADC_BITWIDTH_DEFAULT,  // Hur noggrant vi läser värdet
+        .atten = ADC_ATTEN_DB_12  // Hur känsligt det ska vara
     };
-    adc_oneshot_config_channel(sensor->adc_handle, sensor->adc_pin, &channel_config);  // Konfigurerar kanalen på ADC
-
-    ESP_LOGI(TAG, "ADC initialized on pin %d", adc_pin);  // Skriver ut logginformation om att ADC är initialiserad
+    adc_oneshot_config_channel(sensor->adc_handle, sensor->adc_pin, &channel_config);
+    
+    ESP_LOGI(TAG, "ADC initialized on pin %d", adc_pin);  // Skriver ut i terminalen att vi är redo
 }
 
-// Funktion som uppdaterar ADC-värdet och kollar om tröskeln överskrids
+// Funktion som läser av värdet
 void adc_update(adc_sensor_t *sensor) {
-    int value;  // Variabel för att spara det lästa värdet från ADC
-    adc_oneshot_read(sensor->adc_handle, sensor->adc_pin, &value);  // Läser ADC-värdet från den definierade pinnen
+    int value;  // Skapar en plats att spara värdet i
+    adc_oneshot_read(sensor->adc_handle, sensor->adc_pin, &value);  // Läser värdet från potentiometern
 
-    if (sensor->previous_value == -1) {  // Om det är första gången sensorn läser ett värde
-        sensor->previous_value = value;  // Spara det första värdet
-        return;  // Avsluta utan att göra mer
+    // Första gången vi läser, sparar vi bara värdet och gör inget mer
+    if (sensor->previous_value == -1) {
+        sensor->previous_value = value;
+        return;
     }
 
-    // Om en funktion har definierats för att hantera när tröskeln överskrids
+    // Om vi har sagt att vi ska reagera på tröskelvärden
     if (sensor->on_threshold) {
-        // Om värdet är större än tröskeln och vi inte redan har passerat den
         if (value > sensor->threshold && !sensor->threshold_crossed) {
-            sensor->on_threshold(sensor->adc_pin, value, EDGE_RISING);  // Anropar funktionen för stigande kant
-            sensor->threshold_crossed = true;  // Markerar att tröskeln har överskridits
-        } 
-        // Om värdet är mindre än tröskeln och vi tidigare passerade den
-        else if (value < sensor->threshold && sensor->threshold_crossed) {
-            sensor->on_threshold(sensor->adc_pin, value, EDGE_FALLING);  // Anropar funktionen för fallande kant
-            sensor->threshold_crossed = false;  // Markerar att tröskeln inte längre är överskriden
+            sensor->on_threshold(sensor->adc_pin, value, EDGE_RISING);  // Om värdet går över tröskeln
+            sensor->threshold_crossed = true;
+        } else if (value < sensor->threshold && sensor->threshold_crossed) {
+            sensor->on_threshold(sensor->adc_pin, value, EDGE_FALLING);  // Om värdet går under tröskeln
+            sensor->threshold_crossed = false;
         }
     }
-
-    sensor->previous_value = value;  // Uppdatera det tidigare värdet med det nya värdet
+    sensor->previous_value = value;  // Sparar det nya värdet
 }
 
-// Hämtar det senaste värdet från ADC
+// Hämtar det senaste värdet från sensorn
 int adc_get_value(adc_sensor_t *sensor) {
-    int value;
-    adc_oneshot_read(sensor->adc_handle, sensor->adc_pin, &value);  // Läser det senaste ADC-värdet
-    return value;  // Returnerar värdet
+    int value;  // Skapar en plats för att spara sensorns värde
+    adc_oneshot_read(sensor->adc_handle, sensor->adc_pin, &value);  // Läser av värdet från sensorn
+    return value;  // Skickar tillbaka värdet så att det kan användas någon annanstans
 }
 
-// Sätter tröskelvärdet och definierar en funktion som körs när tröskeln överskrids
+// Funktion för att sätta ett nytt tröskelvärde och koppla en funktion till det
 void adc_set_on_threshold(adc_sensor_t *sensor, int threshold, int edge_type, threshold_callback_t callback) {
-    sensor->threshold = threshold;  // Sätt tröskelvärdet
-    sensor->edge_type = edge_type;  // Sätt om vi ska kolla för stigande eller fallande kant
-    sensor->on_threshold = callback;  // Sätt den funktion som ska anropas när tröskeln överskrids
+    sensor->threshold = threshold;  // Sätter en gräns för när något ska hända, t.ex. 2000
+    sensor->edge_type = edge_type;  // Väljer om vi ska reagera på stigande eller fallande värde
+    sensor->on_threshold = callback;  // Sparar funktionen som ska köras när gränsen passeras
 }
 
-// Funktion som körs när tröskeln överskrids
+// Funktion som körs när värdet passerar tröskeln
 void threshold_handler(int pin, int value, int edge_type) {
-    // Om tröskeln passeras vid stigande kant
-    if (edge_type == EDGE_RISING) {
-        printf("Rising Edge Reached on ADC pin %d! Value: %d\n", pin, value);
-    } 
-    // Om tröskeln passeras vid fallande kant
-    else if (edge_type == EDGE_FALLING) {
-        printf("Falling Edge Reached on ADC pin %d! Value: %d\n", pin, value);
+    if (edge_type == EDGE_RISING) {  // Om värdet har gått upp över tröskeln
+        printf("Värdet på pin %d ökade! Nytt värde: %d\n", pin, value);  // Skriver ut ett meddelande
+    } else if (edge_type == EDGE_FALLING) {  // Om värdet har gått ner under tröskeln
+        printf("Värdet på pin %d minskade! Nytt värde: %d\n", pin, value);  // Skriver ut ett meddelande
     }
 }

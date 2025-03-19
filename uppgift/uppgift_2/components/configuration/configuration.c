@@ -1,45 +1,89 @@
-#include "config.h"
+#include "Configuration.h"
 #include <stdio.h>
 #include <string.h>
+#include "nvs_flash.h"
 
-// Kontrollera att MAX_LEN är definierad
-#ifndef MAX_LEN
-#define MAX_LEN 50
-#endif
+// Funktion för att initiera konfigurationen
+void initConfiguration(Configuration* config) {
+    // Nollställ strängar för att undvika skräpdata
+    memset(config->deviceName, 0, MAX_STR_LEN);
+    memset(config->serialNumber, 0, MAX_STR_LEN);
 
+    // Initiera NVS
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        // Rensa NVS om det är fullt eller föråldrat
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
 
-// Arbetsminne för att lagra namn och serienummer
-char deviceName[MAX_LEN] = "";
-char serialNumber[MAX_LEN] = "";
+    nvs_handle_t nvsHandle;
+    // Öppna NVS i läsläge och läs data
+    if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &nvsHandle) == ESP_OK) {
+        size_t required_size = MAX_STR_LEN;
 
-// Simulerat NVS-minne (icke-flyktigt minne)
-char nvs_deviceName[MAX_LEN] = "StandardDevice";
-char nvs_serialNumber[MAX_LEN] = "123456789";
+        // Läs enhetsnamn från NVS eller använd standard
+        if (nvs_get_str(nvsHandle, DEVICE_NAME_KEY, config->deviceName, &required_size) != ESP_OK) {
+            strcpy(config->deviceName, "DefaultDevice");
+        }
 
-// Laddar data från NVS till arbetsminne
-void initConfig() {
-    strcpy(deviceName, nvs_deviceName); // Kopiera från NVS
-    strcpy(serialNumber, nvs_serialNumber); // Kopiera från NVS
+        // Läs serienummer från NVS eller använd standard
+        required_size = MAX_STR_LEN;
+        if (nvs_get_str(nvsHandle, SERIAL_NUMBER_KEY, config->serialNumber, &required_size) != ESP_OK) {
+            strcpy(config->serialNumber, "0000000000");
+        }
+
+        // Stäng NVS-hanteraren
+        nvs_close(nvsHandle);
+    }
 }
 
-// Hämtar device name från arbetsminnet
-char* getDeviceName() {
-    return deviceName;
+// Funktion för att hämta enhetsnamn
+const char* getDeviceName(Configuration* config) {
+    return config->deviceName;
 }
 
-// Hämtar serial number från arbetsminnet
-char* getSerialNumber() {
-    return serialNumber;
+// Funktion för att hämta serienummer
+const char* getSerialNumber(Configuration* config) {
+    return config->serialNumber;
 }
 
-// Uppdaterar device name i arbetsminnet och sparar i NVS
-void setDeviceName(char *newName) {
-    strncpy(deviceName, newName, MAX_LEN); // Uppdatera arbetsminnet
-    strcpy(nvs_deviceName, newName); // Spara i "NVS"
+// Funktion för att ändra enhetsnamn
+esp_err_t setDeviceName(Configuration* config, const char* newName) {
+    if (!newName) return ESP_ERR_INVALID_ARG; // Kontrollera att namnet är giltigt
+
+    // Kopiera nytt namn till RAM och spara det i NVS
+    strncpy(config->deviceName, newName, MAX_STR_LEN - 1);
+    config->deviceName[MAX_STR_LEN - 1] = '\0';
+    return saveToNVS(DEVICE_NAME_KEY, config->deviceName);
 }
 
-// Uppdaterar serial number i arbetsminnet och sparar i NVS
-void setSerialNumber(char *newSerial) {
-    strncpy(serialNumber, newSerial, MAX_LEN); // Uppdatera arbetsminnet
-    strcpy(nvs_serialNumber, newSerial); // Spara i "NVS"
+// Funktion för att ändra serienummer
+esp_err_t setSerialNumber(Configuration* config, const char* newSerial) {
+    if (!newSerial) return ESP_ERR_INVALID_ARG; // Kontrollera att serienumret är giltigt
+
+    // Kopiera nytt serienummer till RAM och spara det i NVS
+    strncpy(config->serialNumber, newSerial, MAX_STR_LEN - 1);
+    config->serialNumber[MAX_STR_LEN - 1] = '\0';
+    return saveToNVS(SERIAL_NUMBER_KEY, config->serialNumber);
+}
+
+// Funktion för att spara ett värde i NVS
+esp_err_t saveToNVS(const char* key, const char* value) {
+    nvs_handle_t nvsHandle;
+    // Öppna NVS i skrivläge
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &nvsHandle);
+    if (err == ESP_OK) {
+        // Skriv värde till NVS
+        err = nvs_set_str(nvsHandle, key, value);
+        if (err == ESP_OK) {
+            // Bekräfta ändring
+            err = nvs_commit(nvsHandle);
+        }
+        // Stäng NVS-hanteraren
+        nvs_close(nvsHandle);
+    } else {
+        printf(" Failed to write '%s' to NVS: %s\n", key, esp_err_to_name(err));
+    }
+    return err;
 }
