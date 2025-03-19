@@ -6,7 +6,7 @@ void app_main(void) {
     MeasurementDevice sensor;
 
     init(&sensor, ADC_CHANNEL_4); 
-    setOnThreshold(&sensor, 2000, true, threshold_callback, NULL); //tröskelvärde och callback.
+    setOnThreshold(&sensor, 2000, false, threshold_callback, NULL); //tröskelvärde och callback.
     activateDevice(&sensor, true); // Aktiveras enheten.
 
     while (1) {

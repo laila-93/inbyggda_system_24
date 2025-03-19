@@ -1,4 +1,4 @@
-/*#ifndef BUTTON_H
+*#ifndef BUTTON_H
 #define BUTTON_H
 
 #include <stdbool.h>
@@ -21,4 +21,4 @@ void button_setOnPressed(Button_t *btn, void (*onPressed)(int pin));
 void myButtonCallback(int pin);
 
 #endif
-*/
+

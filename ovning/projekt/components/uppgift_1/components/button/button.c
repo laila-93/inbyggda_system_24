@@ -1,4 +1,4 @@
-/*#include "button.h"
+#include "button.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -66,5 +66,5 @@ void myButtonCallback(int pin) {
     printf("Button pressed on pin %d\n", pin);
 
 }
-*/
+
 
